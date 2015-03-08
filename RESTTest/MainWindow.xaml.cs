@@ -16,17 +16,10 @@ namespace RESTTest
     /// </summary>
     public partial class MainWindow : Window
     {
-        WebProxy myProxy;
-        
+        getMKM mkmApi;
+        int idGame;
+        int idLanguage;
 
-        public MainWindow()
-        {
-            InitializeComponent();
-            myProxy = new WebProxy("10.112.242.230:8080");
-            // geht hier nicht myProxy.Credentials = new NetworkCredential("DE99995x.117", "counter");
-            myProxy.UseDefaultCredentials = false;
-            myProxy.BypassProxyOnLocal = false;
-        }
 
         static public string Beautify(XmlDocument doc)
         {
@@ -45,65 +38,34 @@ namespace RESTTest
             return sb.ToString();
         }
 
-        private void Abfrage(String funktion)
+
+        public MainWindow()
         {
+            InitializeComponent();
+            mkmApi = new getMKM(false);
+            // Abfrage Game
+            mkmApi.Abfrage("games", new getMKM.callback(sezteIdGame));
 
-            BackgroundWorker worker = new BackgroundWorker();
-            Boolean boolProxy = useProxy.IsChecked.Value;
+            // Abfrage Language
+            /*  
+                1 - English
+                2 - French
+                3 - German
+                4 - Spanish
+                5 - Italian 
+             */
+            idLanguage = 3;
+        }
 
-            worker.DoWork += delegate(object s, DoWorkEventArgs args)
+
+        private void sezteIdGame(XmlDocument xml)
+        {
+            XmlNodeList xnList = xml.SelectNodes("/response/game[name='Magic the Gathering']/idGame");
+            foreach (XmlNode xn in xnList)
             {
-                string Funktion = (string)args.Argument;
-                String method = "GET";
-                String url = "https://www.mkmapi.eu/ws/v1.1/" + Funktion;
-
-                
-                HttpWebRequest request = WebRequest.CreateHttp(url) as HttpWebRequest;
-                OAuthHeader header = new OAuthHeader();
-                request.Headers.Add(HttpRequestHeader.Authorization, header.getAuthorizationHeader(method, url));
-                request.Method = method;
-                if (boolProxy)
-                {
-                    myProxy.Credentials = new NetworkCredential("DE99995x.117", "counter");
-                    request.Proxy = myProxy;
-                }
-                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-                XmlDocument doc = new XmlDocument();
-                doc.Load(response.GetResponseStream());
-
-                String[] Erg = new String[2];
-                Erg[0] = Beautify(doc);
-                XmlNodeList xnList = doc.SelectNodes("/response/product[1]/image");
-                foreach (XmlNode xn in xnList)
-                {
-                    Erg[1] = xn.InnerText;
-                }
-
-                // XML Formatieren
-                args.Result = Erg;
-            };
-
-            worker.RunWorkerCompleted += delegate(object s, RunWorkerCompletedEventArgs args)
-            {
-                if (args.Error == null)
-                {
-                    String[] result = (String[])args.Result;
-                    tbErg.Text = result[0];
-                    tbErg.Height = (tbErg.Text.Length / 100) * tbErg.LineHeight;
-
-                    if (result[1] != null && result[1].Length > 0)
-                    {
-                        holeKartenBild(result[1]);
-                    }
-                }
-                else
-                {
-                    lblStatus.Content = args.Error;
-                }
-            };
-
-            worker.RunWorkerAsync(funktion);
-
+                idGame = int.Parse(xn.InnerText);
+            }
+            this.Title = this.Title + " GameId: " + idGame.ToString();
         }
 
 
@@ -124,11 +86,11 @@ namespace RESTTest
                 //OAuthHeader header = new OAuthHeader();
                 //request.Headers.Add(HttpRequestHeader.Authorization, header.getAuthorizationHeader(method, url));
                 request.Method = method;
-                if (boolProxy)
+                /*if (boolProxy)
                 {
                     myProxy.Credentials = new NetworkCredential("DE99995x.117", "counter");
                     request.Proxy = myProxy;
-                }
+                }*/
                 request.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.Default);
 
 
@@ -186,17 +148,17 @@ namespace RESTTest
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             lblStatus.Content = "Start Abfrage welche Spiele es gibt";
-            Abfrage("games");
-            
+            //getMKM.callback cb = new getMKM.callback(zeigeXML);
+            mkmApi.Abfrage("games", new getMKM.callback(zeigeXML));
         }
 
         
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             lblStatus.Content = "Starte Abfrage Accountdaten";
-            Abfrage("account");
-
+            mkmApi.Abfrage("account", new getMKM.callback(zeigeXML));
         }
+
 
         private void btnSuche_Click(object sender, RoutedEventArgs e)
         {
@@ -205,8 +167,68 @@ namespace RESTTest
             imgKarte.Source = null;
             // Abfrage starten
             lblStatus.Content = "Starte Suche nach " + txtSuche.Text;
-            Abfrage("products/" + txtSuche.Text + "/1/1/false");
+            mkmApi.Abfrage("products/" + txtSuche.Text + "/" + idGame + "/" + idLanguage + "/false", new getMKM.callback(zeigeBild));
         }
+
+
+        private void btnTry_Click(object sender, RoutedEventArgs e)
+        {
+            startTry();
+        }
+
+
+        private void startTry()
+        {
+            lblStatus.Content = "";
+            // String optimieren und ab dafür
+            if (txtTry.Text.Length > 0)
+            {
+                txtTry.Text = txtTry.Text.Trim();
+                txtTry.Text = txtTry.Text.TrimStart('/');
+                txtTry.Text = txtTry.Text.Replace(":idGame", idGame.ToString());
+                txtTry.Text = txtTry.Text.Replace(":idLanguage", idLanguage.ToString());
+                mkmApi.Abfrage(txtTry.Text, new getMKM.callback(zeigeXML));
+            }
+            else
+            {
+                lblStatus.Content = "Das Abfragefeld ist leer.";
+            }
+        }
+
+
+        private void zeigeXML(XmlDocument xml)
+        {
+            if (xml != null && mkmApi.resultError.Length == 0)
+            {
+                tbErg.Text = Beautify(xml);
+            }
+            else
+            {
+                lblStatus.Content = mkmApi.resultError;
+                tbErg.Text = "";
+            }
+            tbErg.Height = (tbErg.Text.Length / 100) * tbErg.LineHeight;
+        }
+
+
+        private void zeigeBild(XmlDocument xml)
+        {
+            zeigeXML(xml);
+
+            String BildRef = "";
+            XmlNodeList xnList = xml.SelectNodes("/response/product[1]/image");
+            foreach (XmlNode xn in xnList)
+            {
+                BildRef = xn.InnerText;
+            }
+
+            if (BildRef != null && BildRef.Length > 0)
+            {
+                holeKartenBild(BildRef);
+            }
+        }
+
+
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
@@ -216,6 +238,19 @@ namespace RESTTest
         private void tbErg_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Clipboard.SetText(tbErg.Text); // https://github.com/rockz1337/test.git
+        }
+
+        private void useProxy_Checked(object sender, RoutedEventArgs e)
+        {
+            mkmApi.boolProxy = useProxy.IsChecked.Value;
+        }
+
+        private void txtTry_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                startTry();
+            }
         }
 
     }
