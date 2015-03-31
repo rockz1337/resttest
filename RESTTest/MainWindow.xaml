@@ -13,14 +13,16 @@
         <Label Content="Suche:" HorizontalAlignment="Left" Margin="208,41,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="txtSuche" Height="23" Margin="257,41,10,0" TextWrapping="Wrap" Text="Wasteland" VerticalAlignment="Top"/>
         <Button x:Name="btnSuche" Content="Suchen" HorizontalAlignment="Left" Margin="208,69,0,0" VerticalAlignment="Top" Width="75" Click="btnSuche_Click"/>
-        <Image x:Name="imgKarte" Margin="0,97,10,0" Height="566" VerticalAlignment="Top" HorizontalAlignment="Right" Width="300"/>
+        <Image x:Name="imgKarte" Margin="604,97,10,0" Height="566" VerticalAlignment="Top"/>
         <ScrollViewer Margin="10,108,315,10" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" VerticalAlignment="Top">
-            <TextBlock x:Name="tbErg" TextWrapping="Wrap" Text="" Height="545" ScrollViewer.VerticalScrollBarVisibility="Disabled" Width="548" MouseRightButtonUp="tbErg_MouseLeftButtonDown"/>
+            <TextBlock x:Name="tbErg" TextWrapping="Wrap" Height="545" ScrollViewer.VerticalScrollBarVisibility="Disabled" Width="548" MouseRightButtonUp="tbErg_MouseLeftButtonDown"/>
         </ScrollViewer>
         <Button Content="Clipboard" HorizontalAlignment="Left" Margin="10,81,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_2"/>
         <CheckBox x:Name="useProxy" Content="Proxy" HorizontalAlignment="Left" Margin="90,10,0,0" VerticalAlignment="Top" Checked="useProxy_Checked"/>
         <Button x:Name="btnTry" Content="Try" HorizontalAlignment="Left" Margin="288,69,0,0" VerticalAlignment="Top" Width="75" Click="btnTry_Click"/>
         <TextBox x:Name="txtTry" Height="23" Margin="368,69,10,0" TextWrapping="Wrap" VerticalAlignment="Top" KeyDown="txtTry_KeyDown"/>
+        <Button Content="OCR" HorizontalAlignment="Left" Margin="104,53,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_3"/>
+        <Button Content="OCR2" HorizontalAlignment="Left" Margin="104,81,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_4"/>
 
     </Grid>
 </Window>

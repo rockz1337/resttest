@@ -2,11 +2,13 @@
 using System.ComponentModel;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using System.Xml;
 
 namespace RESTTest
@@ -20,7 +22,7 @@ namespace RESTTest
         int idGame;
         int idLanguage;
 
-
+        
         static public string Beautify(XmlDocument doc)
         {
             StringBuilder sb = new StringBuilder();
@@ -60,12 +62,15 @@ namespace RESTTest
 
         private void sezteIdGame(XmlDocument xml)
         {
-            XmlNodeList xnList = xml.SelectNodes("/response/game[name='Magic the Gathering']/idGame");
-            foreach (XmlNode xn in xnList)
+            if (xml != null)
             {
-                idGame = int.Parse(xn.InnerText);
+                XmlNodeList xnList = xml.SelectNodes("/response/game[name='Magic the Gathering']/idGame");
+                foreach (XmlNode xn in xnList)
+                {
+                    idGame = int.Parse(xn.InnerText);
+                }
+                this.Title = this.Title + " GameId: " + idGame.ToString();
             }
-            this.Title = this.Title + " GameId: " + idGame.ToString();
         }
 
 
@@ -229,6 +234,50 @@ namespace RESTTest
         }
 
 
+        [DllImport("gdi32")]
+        static extern int DeleteObject(IntPtr o);
+
+        private static BitmapSource loadBitmap(System.Drawing.Bitmap source)
+        {
+            IntPtr ip = source.GetHbitmap();
+            BitmapSource bs = null;
+            try
+            {
+                bs = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(ip,
+                   IntPtr.Zero, Int32Rect.Empty,
+                   System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+            }
+            finally
+            {
+                DeleteObject(ip);
+            }
+
+            return bs;
+        }
+
+        public static void DoEvents()
+        {
+            Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
+                                                  new Action(delegate { }));
+        }
+
+        public void setBild(System.Drawing.Bitmap bmp)
+        {
+            BitmapSource bmps = loadBitmap(bmp);
+            if (bmps.Width > 1500)
+            {
+                imgKarte.Width = bmps.Width / 4;
+                imgKarte.Height = bmps.Height / 4;
+            }
+            else
+            {
+                imgKarte.Width = bmps.Width;
+                imgKarte.Height = bmps.Height;
+            }
+            imgKarte.Source = bmps;
+            DoEvents();
+        }
+
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
@@ -251,6 +300,55 @@ namespace RESTTest
             {
                 startTry();
             }
+        }
+
+
+
+        private void machOCR(String dasBild)
+        {
+            lblStatus.Content = "Starte OCR - ";
+            /*BackgroundWorker worker = new BackgroundWorker();
+Auskommentiert damit zum Debuggen das Bild auf die Oberfläche gegeben werden kann
+            worker.DoWork += delegate(object s, DoWorkEventArgs args)
+            {*/
+            using (var op = new OCRProcessor(dasBild, this)) // DSCN4299.JPG  
+            {
+                String[] Result = new String[2];
+                Result[1] = op.Version();
+                Result[0] = op.process();
+                /*args.Result = Result;
+            }
+        };
+
+        worker.RunWorkerCompleted += delegate(object s, RunWorkerCompletedEventArgs args)
+        {
+            if (args.Error == null)
+            {
+                String[] Result = args.Result as String[];
+                */
+                tbErg.Text = Result[0];
+                lblStatus.Content += Result[1];
+                lblStatus.Content += " - OCR beendet";
+            }
+            /*else
+            {
+                lblStatus.Content = args.Error;
+            }
+        };
+
+        worker.RunWorkerAsync();
+        */
+        }
+
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            machOCR("206537124.jpg");
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            machOCR("DSCN4300.JPG");
         }
 
     }
